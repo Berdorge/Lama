@@ -56,6 +56,12 @@ struct handler
         case opcode_call:
         case opcode_closure:
             read_uint32_t(bf, reader.ip + 1, &result.target);
+            if (result.target >= bf->code_length)
+            {
+                fprintf(stderr, "Target offset of instruction at %u is out of bounds: ", reader.ip);
+                print(reader, stderr);
+                failure("");
+            }
             break;
         }
 
@@ -116,6 +122,10 @@ int main(int argc, char* argv[])
     for (uint32_t i = 0; i < bf->public_symbols_number; ++i)
     {
         uint32_t symbol_offset = get_public_offset(bf, i);
+        if (symbol_offset >= bf->code_length)
+        {
+            failure("Offset of public symbol #%u is out of bounds", i);
+        }
         analyzer.find_reachable(symbol_offset);
     }
 

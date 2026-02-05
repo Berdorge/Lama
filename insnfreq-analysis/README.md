@@ -101,6 +101,6 @@ I got the following results on my machine:
 ```bash
 $ python3 generate.py 1000000000 > 1gb.bc
 $ time build/lama-insnfreq-analysis --input 1gb.bc --threshold 100000000
-build/lama-insnfreq-analysis --input 1gb.bc --threshold 1000000000  34,36s user 2,03s system 99% cpu 36,396 total
+build/lama-insnfreq-analysis --input 1gb.bc --threshold 1000000000  40,61s user 1,99s system 99% cpu 42,621 total
 ```
 The max memory usage was 10 GB.

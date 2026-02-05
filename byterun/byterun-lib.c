@@ -146,23 +146,22 @@ uint32_t disassemble_one(bytefile* f, uint32_t ip, FILE* output)
     switch (designation)                                                                           \
     {                                                                                              \
     case 0:                                                                                        \
-        PRINTF("G");                                                                               \
+        fprintf(output, "G");                                                                               \
         break;                                                                                     \
     case 1:                                                                                        \
-        PRINTF("L");                                                                               \
+        fprintf(output, "L");                                                                               \
         break;                                                                                     \
     case 2:                                                                                        \
-        PRINTF("A");                                                                               \
+        fprintf(output, "A");                                                                               \
         break;                                                                                     \
     case 3:                                                                                        \
-        PRINTF("C");                                                                               \
+        fprintf(output, "C");                                                                               \
         break;                                                                                     \
     default:                                                                                       \
         FAIL;                                                                                      \
     }                                                                                              \
     UINT32_T(index);                                                                               \
-    PRINTF("(%u)", index);
-#define PRINTF(...) output == NULL ? 0 : fprintf(output, __VA_ARGS__)
+    fprintf(output, "(%u)", index);
 
     static char* ops[] = {"+", "-", "*", "/", "%", "<", "<=", ">", ">=", "==", "!=", "&&", "!!"};
     static char* pats[] = {"=str", "#string", "#array", "#sexp", "#ref", "#val", "#fun"};
@@ -181,7 +180,7 @@ uint32_t disassemble_one(bytefile* f, uint32_t ip, FILE* output)
     /* BINOP */
     case 0:
         FAIL_IF(l == 0 || (l - 1) >= sizeof(ops) / sizeof(ops[0]));
-        PRINTF("BINOP\t%s", ops[l - 1]);
+        fprintf(output, "BINOP\t%s", ops[l - 1]);
         break;
 
     case 1:
@@ -189,56 +188,56 @@ uint32_t disassemble_one(bytefile* f, uint32_t ip, FILE* output)
         {
         case 0:
             INT32_T(const_value);
-            PRINTF("CONST\t%d", const_value);
+            fprintf(output, "CONST\t%d", const_value);
             break;
 
         case 1:
             STRING(string_content);
-            PRINTF("STRING\t%s", string_content);
+            fprintf(output, "STRING\t%s", string_content);
             break;
 
         case 2:
             STRING(sexp_tag);
             UINT32_T(sexp_size);
-            PRINTF("SEXP\t%s ", sexp_tag);
-            PRINTF("%u", sexp_size);
+            fprintf(output, "SEXP\t%s ", sexp_tag);
+            fprintf(output, "%u", sexp_size);
             break;
 
         case 3:
-            PRINTF("STI");
+            fprintf(output, "STI");
             break;
 
         case 4:
-            PRINTF("STA");
+            fprintf(output, "STA");
             break;
 
         case 5:
             UINT32_T(jmp_target);
-            PRINTF("JMP\t0x%.8x", jmp_target);
+            fprintf(output, "JMP\t0x%.8x", jmp_target);
             break;
 
         case 6:
-            PRINTF("END");
+            fprintf(output, "END");
             break;
 
         case 7:
-            PRINTF("RET");
+            fprintf(output, "RET");
             break;
 
         case 8:
-            PRINTF("DROP");
+            fprintf(output, "DROP");
             break;
 
         case 9:
-            PRINTF("DUP");
+            fprintf(output, "DUP");
             break;
 
         case 10:
-            PRINTF("SWAP");
+            fprintf(output, "SWAP");
             break;
 
         case 11:
-            PRINTF("ELEM");
+            fprintf(output, "ELEM");
             break;
 
         default:
@@ -249,7 +248,7 @@ uint32_t disassemble_one(bytefile* f, uint32_t ip, FILE* output)
     case 2:
     case 3:
     case 4:
-        PRINTF("%s\t", lds[h - 2]);
+        fprintf(output, "%s\t", lds[h - 2]);
         PRINT_DESIGNATION(l);
         break;
 
@@ -258,31 +257,31 @@ uint32_t disassemble_one(bytefile* f, uint32_t ip, FILE* output)
         {
         case 0:
             UINT32_T(cjmpz_target);
-            PRINTF("CJMPz\t0x%.8x", cjmpz_target);
+            fprintf(output, "CJMPz\t0x%.8x", cjmpz_target);
             break;
 
         case 1:
             UINT32_T(cjmpnz_target);
-            PRINTF("CJMPnz\t0x%.8x", cjmpnz_target);
+            fprintf(output, "CJMPnz\t0x%.8x", cjmpnz_target);
             break;
 
         case 2:
             UINT32_T(begin_maxstack);
             UINT32_T(begin_locals);
-            PRINTF("BEGIN\t%u ", begin_maxstack);
-            PRINTF("%u", begin_locals);
+            fprintf(output, "BEGIN\t%u ", begin_maxstack);
+            fprintf(output, "%u", begin_locals);
             break;
 
         case 3:
             UINT32_T(cbegin_maxstack);
             UINT32_T(cbegin_locals);
-            PRINTF("CBEGIN\t%u ", cbegin_maxstack);
-            PRINTF("%u", cbegin_locals);
+            fprintf(output, "CBEGIN\t%u ", cbegin_maxstack);
+            fprintf(output, "%u", cbegin_locals);
             break;
 
         case 4:
             UINT32_T(closure_target);
-            PRINTF("CLOSURE\t0x%.8x", closure_target);
+            fprintf(output, "CLOSURE\t0x%.8x", closure_target);
             UINT32_T(closure_args);
             for (uint32_t i = 0; i < closure_args; i++)
             {
@@ -293,38 +292,38 @@ uint32_t disassemble_one(bytefile* f, uint32_t ip, FILE* output)
 
         case 5:
             UINT32_T(callc_args);
-            PRINTF("CALLC\t%u", callc_args);
+            fprintf(output, "CALLC\t%u", callc_args);
             break;
 
         case 6:
             UINT32_T(call_target);
             UINT32_T(call_args);
-            PRINTF("CALL\t0x%.8x ", call_target);
-            PRINTF("%u", call_args);
+            fprintf(output, "CALL\t0x%.8x ", call_target);
+            fprintf(output, "%u", call_args);
             break;
 
         case 7:
             STRING(tag_tag);
             UINT32_T(tag_size);
-            PRINTF("TAG\t%s ", tag_tag);
-            PRINTF("%u", tag_size);
+            fprintf(output, "TAG\t%s ", tag_tag);
+            fprintf(output, "%u", tag_size);
             break;
 
         case 8:
             UINT32_T(array_size);
-            PRINTF("ARRAY\t%u", array_size);
+            fprintf(output, "ARRAY\t%u", array_size);
             break;
 
         case 9:
             UINT32_T(fail_x1);
             UINT32_T(fail_x2);
-            PRINTF("FAIL\t%u", fail_x1);
-            PRINTF("%u", fail_x2);
+            fprintf(output, "FAIL\t%u", fail_x1);
+            fprintf(output, "%u", fail_x2);
             break;
 
         case 10:
             UINT32_T(line);
-            PRINTF("LINE\t%u", line);
+            fprintf(output, "LINE\t%u", line);
             break;
 
         default:
@@ -334,31 +333,31 @@ uint32_t disassemble_one(bytefile* f, uint32_t ip, FILE* output)
 
     case 6:
         FAIL_IF(l >= sizeof(pats) / sizeof(pats[0]));
-        PRINTF("PATT\t%s", pats[l]);
+        fprintf(output, "PATT\t%s", pats[l]);
         break;
 
     case 7:
         switch (l)
         {
         case 0:
-            PRINTF("CALL\tLread");
+            fprintf(output, "CALL\tLread");
             break;
 
         case 1:
-            PRINTF("CALL\tLwrite");
+            fprintf(output, "CALL\tLwrite");
             break;
 
         case 2:
-            PRINTF("CALL\tLlength");
+            fprintf(output, "CALL\tLlength");
             break;
 
         case 3:
-            PRINTF("CALL\tLstring");
+            fprintf(output, "CALL\tLstring");
             break;
 
         case 4:
             UINT32_T(x);
-            PRINTF("CALL\tBarray\t%u", x);
+            fprintf(output, "CALL\tBarray\t%u", x);
             break;
 
         default:

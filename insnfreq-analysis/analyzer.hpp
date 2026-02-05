@@ -137,7 +137,7 @@ struct analyzer
 
             reader_t reader = make_reader(ip);
             instruction_result result = handler.describe_flow(reader);
-            handler.print(reader, nullptr);
+            handler.print(reader, stdin);
             ip = reader.ip;
 
             if (result.flow != instruction_flow::normal && ip < code_size)
@@ -174,7 +174,7 @@ struct analyzer
             reader.hash2 = reader.hash1;
             reader.hash1 = hash_initial;
 
-            handler.print(reader, nullptr);
+            handler.print(reader, stdin);
 
             table.mark_occurrence(code_ptr, reader.hash1, current_ip, reader.ip - current_ip);
             if (is_flow_continued[current_ip])
