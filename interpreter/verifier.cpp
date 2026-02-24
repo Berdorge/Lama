@@ -44,53 +44,6 @@ static void check_desig_index(bytefile* bf, uint32_t index)
     }
 }
 
-struct controlflow_visitor : empty_visitor
-{
-    bytefile* bf;
-    bool* should_continue;
-
-    void visit_jmp(uint8_t* address)
-    {
-        ip = address;
-    }
-
-    void visit_ret()
-    {
-        if (stack_size())
-        {
-            ip = reinterpret_cast<uint8_t*>(pop_stack_unsafe());
-        }
-        else
-        {
-            *should_continue = false;
-        }
-    }
-
-    template <condition cond>
-    void visit_cjmp(uint8_t* address, aint value)
-    {
-        push_stack_safe(bf, reinterpret_cast<aint>(ip));
-        ip = address;
-    }
-
-    void visit_closure(uint8_t* destination, uint32_t capture_size, aint* captured)
-    {
-        assert_begin(bf, destination, "Closure");
-        visit_cjmp<condition::zero>(destination, 0);
-    }
-
-    void visit_call(uint8_t* destination, uint32_t args_size)
-    {
-        assert_begin(bf, destination, "Call");
-        visit_cjmp<condition::zero>(destination, 0);
-    }
-
-    void visit_fail(uint32_t arg1, uint32_t arg2)
-    {
-        visit_ret();
-    }
-};
-
 struct write_maxstack_visitor : empty_visitor
 {
     bytefile* bf;
@@ -107,7 +60,7 @@ struct write_maxstack_visitor : empty_visitor
     }
 };
 
-struct abstract_stack_visitor : empty_visitor
+struct verifier_visitor : empty_visitor
 {
     bytefile* bf;
     bool* should_continue;
@@ -248,74 +201,11 @@ struct abstract_stack_visitor : empty_visitor
     }
 };
 
-struct flow_merge
+static void verify_stack_safety(bytefile* bf, uint8_t* initial_ip)
 {
-    uint32_t offset;
-    uint32_t stack_size;
-
-    bool operator<(flow_merge const& other) const
-    {
-        return offset < other.offset;
-    }
-};
-
-static std::vector<bool> find_flow_merges(bytefile* bf, uint8_t* initial_ip)
-{
+    std::vector<uint16_t> stack_size(bf->code_length, UINT16_MAX);
     bool should_continue = true;
-    std::vector<bool> visited(bf->code_length, false);
-    std::vector<bool> is_flow_merge(bf->code_length, false);
-
-    current_frame = nullptr;
-    generic_call(bf, 0, 0, initial_ip);
-    ip = initial_ip;
-
-    while (should_continue)
-    {
-        uint32_t offset = ip - bf->code_ptr;
-        controlflow_visitor visitor{empty_visitor{}, bf, &should_continue};
-
-        if (visited[offset])
-        {
-            is_flow_merge[offset] = true;
-            visitor.visit_ret();
-            continue;
-        }
-
-        current_frame->current_instruction_ptr = ip;
-        visited[offset] = true;
-        interpret_instruction<operation_safety::safe>(bf, ip, visitor);
-    }
-
-    return is_flow_merge;
-}
-
-static std::vector<flow_merge> build_flow_merges(std::vector<bool> const& is_flow_merge)
-{
-    std::vector<flow_merge> flow_merges;
-    for (size_t i = 0; i < is_flow_merge.size(); ++i)
-    {
-        if (is_flow_merge[i])
-        {
-            flow_merge m;
-            m.offset = i;
-            m.stack_size = UINT32_MAX;
-            flow_merges.push_back(m);
-        }
-    }
-    return flow_merges;
-}
-
-static flow_merge& find_merge(bytefile* bf, std::vector<flow_merge>& flow_merges, uint32_t offset)
-{
-    return *std::lower_bound(flow_merges.begin(), flow_merges.end(), flow_merge{offset, 0});
-}
-
-static void
-verify_stack_safety(bytefile* bf, uint8_t* initial_ip, std::vector<bool> const& is_flow_merge)
-{
-    auto flow_merges = build_flow_merges(is_flow_merge);
-    bool should_continue = true;
-    abstract_stack_visitor visitor{empty_visitor{}, bf, &should_continue};
+    verifier_visitor visitor{empty_visitor{}, bf, &should_continue};
 
     current_frame = nullptr;
     visitor.abstract_call(0, 0, initial_ip);
@@ -326,24 +216,20 @@ verify_stack_safety(bytefile* bf, uint8_t* initial_ip, std::vector<bool> const& 
         uint32_t offset = ip - bf->code_ptr;
         current_frame->current_instruction_ptr = ip;
 
-        if (is_flow_merge[offset])
+        if (stack_size[offset] != UINT16_MAX)
         {
-            flow_merge& m = find_merge(bf, flow_merges, offset);
-            if (m.stack_size == UINT32_MAX)
+            if (stack_size[offset] != visitor.abstract_stack_size())
             {
-                m.stack_size = visitor.abstract_stack_size();
+                interpret_stage_failure(
+                    bf, "Inconsistent stack size at offset %u: %u and %u", offset,
+                    stack_size[offset], visitor.abstract_stack_size()
+                );
             }
-            else
-            {
-                if (m.stack_size != visitor.abstract_stack_size())
-                {
-                    interpret_stage_failure(bf, "Inconsistent stack size at flow merge");
-                }
-                visitor.visit_ret();
-                continue;
-            }
+            visitor.visit_ret();
+            continue;
         }
 
+        stack_size[offset] = visitor.abstract_stack_size();
         interpret_instruction<operation_safety::safe>(bf, ip, visitor);
     }
 
@@ -357,6 +243,5 @@ void verify(bytefile* bf, uint8_t* initial_ip, aint* stack)
 
     assert_begin(bf, initial_ip, "Entrypoint");
 
-    auto is_flow_merge = find_flow_merges(bf, initial_ip);
-    verify_stack_safety(bf, initial_ip, is_flow_merge);
+    verify_stack_safety(bf, initial_ip);
 }

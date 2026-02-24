@@ -14,8 +14,8 @@ $ echo "0" | time _build/default/src/Driver.exe -runtime runtime -s performance/
 
 ```bash
 $ (cd performance && ../_build/default/src/Driver.exe -runtime ../runtime -b Sort.lama) && time interpreter/build/lama-interpreter performance/Sort.bc
-Verifier took 8 us
-interpreter/build/lama-interpreter performance/Sort.bc  104,88s user 3,88s system 99% cpu 1:48,79 total
+Verifier took 5 us
+interpreter/build/lama-interpreter performance/Sort.bc  103,91s user 3,93s system 99% cpu 1:47,85 total
 ```
 
 Previous results (before implementing the verifier):
@@ -26,7 +26,7 @@ interpreter/build/lama-interpreter performance/Sort.bc  114,02s user 3,75s syste
 
 | `lamac -i` | `lamac -s` | My interpreter | My interpreter + verifier |
 | --- | --- | --- | --- |
-| ~344 seconds | ~111 seconds | ~117 seconds | ~108 seconds |
+| ~344 seconds | ~113 seconds | ~117 seconds | ~108 seconds |
 
 If I am not mistaken,
 `make -C Lama all` builds
