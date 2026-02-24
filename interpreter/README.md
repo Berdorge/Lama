@@ -2,20 +2,31 @@
 
 I got these results (after following [#how-to-run](#how-to-run))
 on my machine:
-``` bash
-$ echo "0" | time Lama/_build/default/src/Driver.exe -runtime Lama/runtime -i Lama/performance/Sort.lama
- > Lama/_build/default/src/Driver.exe -runtime Lama/runtime -i   342,74s user 1,73s system 99% cpu 5:44,57 total
+```bash
+$ echo "0" | time _build/default/src/Driver.exe -runtime runtime -i performance/Sort.lama
+ > _build/default/src/Driver.exe -runtime runtime -i performance/Sort.lama  342,74s user 1,73s system 99% cpu 5:44,57 total
 ```
 
 ```bash
-$ (cd Lama/performance && ../_build/default/src/Driver.exe -runtime ../runtime -b Sort.lama) 
-&& time build/lama-interpreter Lama/performance/Sort.bc
-build/lama-interpreter Lama/performance/Sort.bc  114,02s user 3,75s system 99% cpu 1:57,79 total
+$ echo "0" | time _build/default/src/Driver.exe -runtime runtime -s performance/Sort.lama
+ > _build/default/src/Driver.exe -runtime runtime -s performance/Sort.lama  111,20s user 1,83s system 99% cpu 1:53,05 total
 ```
 
-| `lamac -i` | My interpreter |
-| --- | --- |
-| ~342 seconds | ~114 seconds |
+```bash
+$ (cd performance && ../_build/default/src/Driver.exe -runtime ../runtime -b Sort.lama) && time interpreter/build/lama-interpreter performance/Sort.bc
+Verifier took 8 us
+interpreter/build/lama-interpreter performance/Sort.bc  104,88s user 3,88s system 99% cpu 1:48,79 total
+```
+
+Previous results (before implementing the verifier):
+```bash
+$ (cd performance && ../_build/default/src/Driver.exe -runtime ../runtime -b Sort.lama) && time interpreter/build/lama-interpreter performance/Sort.bc
+interpreter/build/lama-interpreter performance/Sort.bc  114,02s user 3,75s system 99% cpu 1:57,79 total
+```
+
+| `lamac -i` | `lamac -s` | My interpreter | My interpreter + verifier |
+| --- | --- | --- | --- |
+| ~344 seconds | ~111 seconds | ~117 seconds | ~108 seconds |
 
 If I am not mistaken,
 `make -C Lama all` builds
@@ -23,18 +34,7 @@ If I am not mistaken,
 so both programs are compared in Release
 configurations.
 
-## Implementation details
-
-The implementation details regarding callstack
-are described through comments in `frame.hpp`.
-
 ## How to Run
-
-1. First, pull Lama submodule to
-    be able to build the runtime:
-    ```bash
-    git submodule update --init
-    ```
 
 1. Follow [Lama](https://github.com/PLTools/Lama/)'s
     installation instructions up to
@@ -47,7 +47,7 @@ are described through comments in `frame.hpp`.
 
 1. Build Lama:
     ```bash
-    make -C Lama all
+    make all
     ```
     The only thing that is needed from Lama is its runtime.
     `all` is a surefire way of 
@@ -57,17 +57,17 @@ are described through comments in `frame.hpp`.
 1. Generate a `Makefile` to build the interpreter
     using CMake:
     ```bash
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=/usr/bin/g++-11 -B build -G "Unix Makefiles"
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=/usr/bin/g++-11 -S interpreter -B interpreter/build -G "Unix Makefiles"
     ```
     You may change the `CMAKE_CXX_COMPILER` variable
     to specify your desired compiler.
 
 1. Finally, build the interpreter:
     ```bash
-    make -C build
+    make -C interpreter/build
     ```
     The interpreter's executable will be located
-    at `build/lama-interpreter`
+    at `interpreter/build/lama-interpreter`
     (assuming you specified
-    `build` as the build directory when executing
+    `interpreter/build` as the build directory when executing
     CMake).

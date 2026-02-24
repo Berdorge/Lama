@@ -3,30 +3,35 @@
 
 #include "runtime.hpp"
 
-extern uint32_t global_area_size;
-extern aint* global_stack;
-extern uint8_t* code_ptr;
+#include <cstdint>
+#include <cstdio>
 
-aint& global_at_unsafe(size_t index);
+typedef struct
+{
+    char* string_ptr;
+    uint32_t* public_ptr;
+    uint8_t* code_ptr;
+    uint32_t stringtab_size;
+    uint32_t global_area_size;
+    uint32_t public_symbols_number;
+    uint32_t code_length;
+    uint8_t content[0];
+} bytefile;
 
-void read_file(char* fname);
+bytefile* read_file(char* fname);
 
-uint8_t next_code_byte();
+inline uint32_t le_bytes_to_uint32_t(uint8_t const* bytes)
+{
+    return static_cast<uint32_t>(bytes[0]) | (static_cast<uint32_t>(bytes[1]) << 8) |
+           (static_cast<uint32_t>(bytes[2]) << 16) | (static_cast<uint32_t>(bytes[3]) << 24);
+}
 
-uint32_t next_code_uint32_t();
-
-int32_t next_code_int32_t();
-
-char* next_code_string();
-
-uint8_t* next_code_fixup();
-
-aint& next_code_global();
-
-aint& next_code_local();
-
-aint& next_code_arg();
-
-aint& next_code_capture();
+inline void uint32_t_to_le_bytes(uint32_t value, uint8_t* bytes)
+{
+    bytes[0] = static_cast<uint8_t>(value & 0xFF);
+    bytes[1] = static_cast<uint8_t>((value >> 8) & 0xFF);
+    bytes[2] = static_cast<uint8_t>((value >> 16) & 0xFF);
+    bytes[3] = static_cast<uint8_t>((value >> 24) & 0xFF);
+}
 
 #endif

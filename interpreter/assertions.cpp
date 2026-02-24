@@ -1,7 +1,6 @@
 #include "assertions.hpp"
-#include "bytefile.hpp"
 #include "frame.hpp"
-#include "instructions.hpp"
+#include "opcodes.hpp"
 #include "runtime.hpp"
 
 #include <cerrno>
@@ -155,42 +154,42 @@ char const* opcode_description(uint8_t opcode)
     }
 }
 
-void assert_boxed(aint value)
+void assert_boxed(bytefile* bf, aint value)
 {
     if (UNBOXED(value))
     {
         aint value_kind = LkindOf((void*)value);
-        interpret_stage_failure("Expected boxed value, got %s", kind_description(value_kind));
+        interpret_stage_failure(bf, "Expected boxed value, got %s", kind_description(value_kind));
     }
 }
 
-void assert_unboxed(aint value)
+void assert_unboxed(bytefile* bf, aint value)
 {
     if (!UNBOXED(value))
     {
         aint value_kind = LkindOf((void*)value);
-        interpret_stage_failure("Expected unboxed value, got %s", kind_description(value_kind));
+        interpret_stage_failure(bf, "Expected unboxed value, got %s", kind_description(value_kind));
     }
 }
 
-aint unbox_safe(aint value)
+aint unbox_safe(bytefile* bf, aint value)
 {
-    assert_unboxed(value);
+    assert_unboxed(bf, value);
     return UNBOX(value);
 }
 
-void assert_kind(aint value, aint expected_kind)
+void assert_kind(bytefile* bf, aint value, aint expected_kind)
 {
     aint value_kind = LkindOf((void*)value);
     if (value_kind != expected_kind)
     {
         interpret_stage_failure(
-            "Expected %s, got %s", kind_description(expected_kind), kind_description(value_kind)
+            bf, "Expected %s, got %s", kind_description(expected_kind), kind_description(value_kind)
         );
     }
 }
 
-void interpret_stage_failure(char const* msg, ...)
+void interpret_stage_failure(bytefile* bf, char const* msg, ...)
 {
     va_list args;
     va_start(args, msg);
@@ -203,7 +202,7 @@ void interpret_stage_failure(char const* msg, ...)
     {
         fprintf(
             stderr, "\tat line %zu, IP %zu, %s\n", UNBOX(frame->current_line),
-            (size_t)(frame->current_instruction_ptr - code_ptr),
+            (size_t)(frame->current_instruction_ptr - bf->code_ptr),
             opcode_description(*(frame->current_instruction_ptr))
         );
     }

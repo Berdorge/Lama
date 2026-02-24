@@ -1,11 +1,15 @@
-#include "assertions.hpp"
+#include "abstract_interpreter.hpp"
 #include "bytefile.hpp"
 #include "frame.hpp"
-#include "instructions.hpp"
-#include "runtime.hpp"
+#include "interpreter.hpp"
+#include "verifier.hpp"
 
-#include <cstdio>
-#include <cstring>
+#include <chrono>
+#include <iomanip>
+#include <iostream>
+#include <string>
+
+#define ENTRYPOINT "main"
 
 int main(int argc, char* argv[])
 {
@@ -15,28 +19,27 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    read_file(argv[1]);
-    __gc_init();
-
+    bytefile* bf = read_file(argv[1]);
     aint stack[global_stack_capacity + 2];
-    memset(stack, 0, sizeof(stack));
 
-    __gc_stack_top = (size_t)(&stack[1]) & ~0xF;
-    __gc_stack_bottom = __gc_stack_top + sizeof(aint) + global_area_size * sizeof(aint);
+    for (uint32_t i = 0; i < bf->public_symbols_number; ++i)
+    {
+        if (std::string(get_public_name(bf, i)) == ENTRYPOINT)
+        {
+            auto begin = std::chrono::steady_clock::now();
 
-    auto root_frame = push_frame_safe();
+            verify(bf, get_public_ip(bf, i), stack);
 
-    root_frame->prev = nullptr;
-    root_frame->current_instruction_ptr = nullptr;
-    root_frame->stack_base = (aint*)__gc_stack_bottom;
-    root_frame->current_line = BOX(1);
-    root_frame->capture_size = BOX(0);
-    root_frame->args_size = BOX(0);
-    root_frame->locals_size = BOX(0);
+            auto end = std::chrono::steady_clock::now();
+            auto verify_duration =
+                std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
+            fprintf(stderr, "Verifier took %lld us\n", verify_duration.count());
 
-    current_frame = root_frame;
-    ip = code_ptr;
-    run_instructions();
+            interpret(bf, get_public_ip(bf, i), stack);
 
-    return 0;
+            return 0;
+        }
+    }
+
+    failure("Public symbol \"" ENTRYPOINT "\" not found");
 }

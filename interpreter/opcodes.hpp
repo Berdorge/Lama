@@ -1,5 +1,5 @@
-#ifndef INSTRUCTIONS_HPP
-#define INSTRUCTIONS_HPP
+#ifndef OPCODES_HPP
+#define OPCODES_HPP
 
 #include <cstddef>
 #include <cstdint>
@@ -72,7 +72,5 @@ constexpr uint8_t opcode_builtin_write = 0x71;
 constexpr uint8_t opcode_builtin_length = 0x72;
 constexpr uint8_t opcode_builtin_string = 0x73;
 constexpr uint8_t opcode_builtin_array = 0x74;
-
-void run_instructions();
 
 #endif

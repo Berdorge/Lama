@@ -14,5 +14,5 @@ set_target_properties(lama-runtime PROPERTIES
     IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/../runtime/runtime.a"
 )
 
-add_executable(lama-interpreter main.cpp assertions.cpp frame.cpp instructions.cpp bytefile.cpp)
+add_executable(lama-interpreter assertions.cpp bytefile.cpp frame.cpp interpreter.cpp main.cpp verifier.cpp)
 target_link_libraries(lama-interpreter PRIVATE lama-runtime)
